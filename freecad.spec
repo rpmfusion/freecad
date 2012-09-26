@@ -23,7 +23,7 @@
 
 Name:           freecad
 Version:        0.12
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
@@ -170,7 +170,7 @@ LDFLAGS='-Wl,--as-needed'; export LDFLAGS
        -DDOCDIR=%{_docdir}/%{name} \
        -DCOIN3D_INCLUDE_DIR=%{_includedir}/Coin2 \
        -DCOIN3D_DOC_PATH=%{_datadir}/Coin2/Coin \
- %if %{occ}
+%if %{occ}
        -DUSE_OCC=TRUE \
 %endif
 %if ! %{bundled_smesh}
@@ -282,10 +282,13 @@ fi
 
 
 %changelog
+* Wed Sep 26 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-8
+- Rebuild for boost 1.50.
+
 * Thu Jul 05 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-7
 - Remove BuildRequires: tbb-devel and gts-devel
 - Add missing license files to %%doc.
-- Add missing build requirement for hicolor-icon-theme.
+- Add missing requirement for hicolor-icon-theme.
 - Fix excessive linking issue.
 - Other minor spec updates.
 
