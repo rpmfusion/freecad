@@ -5,9 +5,9 @@
 # This revision is 0.12 final.
 %global svnrev 5284
 
-# Use update cmake package on EL builds.
+# Use updated cmake package on EL builds.
 %if 0%{?el6}
-%global cmake %cmake28
+%global cmake %cmake28 -DBoost_NO_BOOST_CMAKE=ON
 %endif
 
 # Some configuration options for other environments
@@ -23,7 +23,7 @@
 
 Name:           freecad
 Version:        0.12
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
@@ -60,7 +60,12 @@ Patch9:         freecad-0.12-rm_f2c.patch
 
 
 # Utilities
-BuildRequires:  cmake doxygen swig
+%if (0%{?rhel} == 6)
+BuildRequires:  cmake28
+%else
+BuildRequires:  cmake
+%endif
+BuildRequires:  doxygen swig
 BuildRequires:  gcc-gfortran
 BuildRequires:  gettext
 BuildRequires:  dos2unix
@@ -282,6 +287,10 @@ fi
 
 
 %changelog
+* Sat Oct 20 2012 John Morris <john@zultron.com> - 0.12-9
+- Use cmake28 package on el6
+- Remove COIN3D_DOC_PATH cmake def (one less warning during build)
+
 * Wed Sep 26 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-8
 - Rebuild for boost 1.50.
 
