@@ -6,7 +6,7 @@
 %global svnrev 5284
 
 # Use updated cmake package on EL builds.
-%if 0%{?el6}
+%if 0%{?rhel}
 %global cmake %cmake28 -DBoost_NO_BOOST_CMAKE=ON
 %endif
 
@@ -65,7 +65,7 @@ BuildRequires:  cmake28
 %else
 BuildRequires:  cmake
 %endif
-BuildRequires:  doxygen swig
+BuildRequires:  doxygen graphviz swig
 BuildRequires:  gcc-gfortran
 BuildRequires:  gettext
 BuildRequires:  dos2unix
@@ -105,6 +105,7 @@ BuildRequires:  python-pycxx-devel
 
 # Needed for plugin support and is not a soname dependency.
 Requires:       python-pivy
+Requires:       PyQt4
 Requires:       hicolor-icon-theme
 
 # plugins and private shared libs in %%{_libdir}/freecad/lib are private;
