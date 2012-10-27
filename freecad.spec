@@ -5,9 +5,9 @@
 # This revision is 0.12 final.
 %global svnrev 5284
 
-# Use update cmake package on EL builds.
-%if 0%{?el6}
-%global cmake %cmake28
+# Use updated cmake package on EL builds.
+%if 0%{?rhel}
+%global cmake %cmake28 -DBoost_NO_BOOST_CMAKE=ON
 %endif
 
 # Some configuration options for other environments
@@ -23,7 +23,7 @@
 
 Name:           freecad
 Version:        0.12
-Release:        7%{?dist}
+Release:        9%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
@@ -60,7 +60,12 @@ Patch9:         freecad-0.12-rm_f2c.patch
 
 
 # Utilities
-BuildRequires:  cmake doxygen swig
+%if (0%{?rhel} == 6)
+BuildRequires:  cmake28
+%else
+BuildRequires:  cmake
+%endif
+BuildRequires:  doxygen graphviz swig
 BuildRequires:  gcc-gfortran
 BuildRequires:  gettext
 BuildRequires:  dos2unix
@@ -100,6 +105,7 @@ BuildRequires:  python-pycxx-devel
 
 # Needed for plugin support and is not a soname dependency.
 Requires:       python-pivy
+Requires:       PyQt4
 Requires:       hicolor-icon-theme
 
 # plugins and private shared libs in %%{_libdir}/freecad/lib are private;
@@ -170,7 +176,7 @@ LDFLAGS='-Wl,--as-needed'; export LDFLAGS
        -DDOCDIR=%{_docdir}/%{name} \
        -DCOIN3D_INCLUDE_DIR=%{_includedir}/Coin2 \
        -DCOIN3D_DOC_PATH=%{_datadir}/Coin2/Coin \
- %if %{occ}
+%if %{occ}
        -DUSE_OCC=TRUE \
 %endif
 %if ! %{bundled_smesh}
@@ -282,10 +288,17 @@ fi
 
 
 %changelog
+* Sat Oct 20 2012 John Morris <john@zultron.com> - 0.12-9
+- Use cmake28 package on el6
+- Remove COIN3D_DOC_PATH cmake def (one less warning during build)
+
+* Wed Sep 26 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-8
+- Rebuild for boost 1.50.
+
 * Thu Jul 05 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-7
 - Remove BuildRequires: tbb-devel and gts-devel
 - Add missing license files to %%doc.
-- Add missing build requirement for hicolor-icon-theme.
+- Add missing requirement for hicolor-icon-theme.
 - Fix excessive linking issue.
 - Other minor spec updates.
 
