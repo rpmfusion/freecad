@@ -1,12 +1,17 @@
 # Maintainers:  keep this list of plugins up to date
 # List plugins in %%{_libdir}/freecad/lib, less '.so' and 'Gui.so', here
-%global plugins Complete Drawing Fem FreeCAD Image Import Inspection Mesh MeshPart Part PartDesign Points QtUnit Raytracing ReverseEngineering Robot Sketcher Start Web
+%global plugins Assembly Complete Drawing Fem FreeCAD Image Import Inspection Mesh MeshPart Part Points QtUnit Raytracing ReverseEngineering Robot Sketcher Start Web
+
+# Some plugins go in the Mod folder instead of lib. Deal with those here:
+%global mod_plugins Mod/PartDesign
 
 # This revision is 0.12 final.
-%global svnrev 5284
+%global rev 1830
 
 # Use updated cmake package on EL builds.
-%if 0%{?rhel}
+# Temporary workaround for cmake/boost bug:
+# http://public.kitware.com/Bug/view.php?id=13446
+%if 0%{?el6}
 %global cmake %cmake28 -DBoost_NO_BOOST_CMAKE=ON
 %endif
 
@@ -22,8 +27,8 @@
 
 
 Name:           freecad
-Version:        0.12
-Release:        9%{?dist}
+Version:        0.13
+Release:        1%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
@@ -31,45 +36,26 @@ Group:          Applications/Engineering
 # on OCE which is considered non-free.
 License:        GPLv3+ with exception
 URL:            http://sourceforge.net/apps/mediawiki/free-cad/
-Source0:        http://downloads.sourceforge.net/free-cad/%{name}-%{version}.%{svnrev}.tar.gz
+Source0:        http://downloads.sourceforge.net/free-cad/%{name}-%{version}.%{rev}.tar.gz
 Source101:      freecad.desktop
 Source102:      freecad.1
 
-# Patches 0 & 2 accepted upstream.
-# https://sourceforge.net/apps/mantisbt/free-cad/view.php?id=519
-# Fix a bunch of rpath issues and other tweaks.
-Patch0:         freecad-system_inst.patch
-# Remove bundled libs from cmake configuration.
-Patch1:         freecad-3rdParty.patch
-# Fix incomplete cmake config.
-Patch2:         freecad-StartPage.patch
-# Fixed in svn
-Patch3:         freecad-glu.patch
-# Disable unfinished modules.
-Patch4:         freecad-cmake_Mod_fix.patch
-# Unbundle zipios++
-Patch5:         freecad-0.12-zipios.patch
-# Patch for gcc 4.7
-Patch6:         freecad-gcc-4.7.patch
-# Add build option for OpenCASCADE
-Patch7:         freecad-0.12-OpenCASCADE-option.patch
-# Unbundle PyCXX
-Patch8:         freecad-0.12-pycxx.patch
-# f2c is only needed for smesh, and maybe not even there
-Patch9:         freecad-0.12-rm_f2c.patch
+Patch0:         freecad-3rdParty.patch
+Patch1:         freecad-0.13-pycxx.patch
 
 
 # Utilities
-%if (0%{?rhel} == 6)
+%if 0%{?rhel}
 BuildRequires:  cmake28
 %else
 BuildRequires:  cmake
 %endif
-BuildRequires:  doxygen graphviz swig
+BuildRequires:  doxygen swig graphviz
 BuildRequires:  gcc-gfortran
 BuildRequires:  gettext
 BuildRequires:  dos2unix
 BuildRequires:  desktop-file-utils
+BuildRequires:  tbb-devel
 # Development Libraries
 BuildRequires:  freeimage-devel
 BuildRequires:  libXmu-devel
@@ -102,11 +88,15 @@ BuildRequires:  zipios++-devel
 %if ! %{bundled_pycxx}
 BuildRequires:  python-pycxx-devel
 %endif
+BuildRequires:  libicu-devel
+BuildRequires:  python-matplotlib
 
 # Needed for plugin support and is not a soname dependency.
 Requires:       python-pivy
 Requires:       PyQt4
 Requires:       hicolor-icon-theme
+Requires:       python-matplotlib
+Requires:       python-collada
 
 # plugins and private shared libs in %%{_libdir}/freecad/lib are private;
 # prevent private capabilities being advertised in Provides/Requires
@@ -115,6 +105,8 @@ Requires:       hicolor-icon-theme
 %filter_provides_in %{_libdir}/%{name}/lib
 %filter_from_requires %{plugin_regexp}
 %filter_from_provides %{plugin_regexp}
+%filter_provides_in %{_libdir}/%{name}/Mod
+%filter_requires_in %{_libdir}/%{name}/Mod
 %filter_setup
 }
 
@@ -140,22 +132,18 @@ End user documentation for FreeCAD
 
 
 %prep
-%setup -q -n FreeCAD-%{version}.%{svnrev}
-
-%patch0 -p1 -b .sysinst
-%patch1 -p1 -b .3rdparty
-%patch2 -p1 -b .startpage
-%patch3 -p1 -b .glufix
-%patch4 -p1 -b .modfix
-%patch5 -p1 -b .zipios
-%patch6 -p1 -b .gcc47
-%patch7 -p1 -b .OCC
+#setup -q -n FreeCAD-%{version}.%{svnrev}
+%setup -q -n freecad-%{version}.%{rev}
+%patch0 -p1 -b .3rdparty
 # Remove bundled pycxx if we're not using it
 %if ! %{bundled_pycxx}
-%patch8 -p1 -b .pycxx
+%patch1 -p1 -b .pycxx
 rm -rf src/CXX
 %endif
-%patch9 -p1 -b .f2c
+
+%if ! %{bundled_zipios}
+rm -rf src/zipios++
+%endif
 
 # Fix encodings
 dos2unix -k src/Mod/Test/unittestgui.py \
@@ -171,11 +159,14 @@ rm -rf src/3rdParty
 rm -rf build && mkdir build && pushd build
 
 LDFLAGS='-Wl,--as-needed'; export LDFLAGS
-%cmake -DCMAKE_INSTALL_PREFIX=%{_libdir}/freecad \
+%cmake -DCMAKE_INSTALL_PREFIX=%{_libdir}/%{name} \
+       -DCMAKE_INSTALL_DATADIR=%{_datadir}/%{name} \
+       -DCMAKE_INSTALL_DOCDIR=%{_docdir}/%{name} \
+       -DCMAKE_INSTALL_INCLUDEDIR=%{_includedir} \
        -DRESOURCEDIR=%{_libdir}/freecad \
-       -DDOCDIR=%{_docdir}/%{name} \
        -DCOIN3D_INCLUDE_DIR=%{_includedir}/Coin2 \
        -DCOIN3D_DOC_PATH=%{_datadir}/Coin2/Coin \
+       -DFREECAD_USE_EXTERNAL_PIVY=TRUE \
 %if %{occ}
        -DUSE_OCC=TRUE \
 %endif
@@ -183,7 +174,7 @@ LDFLAGS='-Wl,--as-needed'; export LDFLAGS
        -DSMESH_INCLUDE_DIR=%{_includedir} \
 %endif
 %if ! %{bundled_zipios}
-       -DUSE_EXTERNAL_ZIPIOS=TRUE \
+       -DFREECAD_USE_EXTERNAL_ZIPIOS=TRUE \
 %endif
 %if ! %{bundled_pycxx}
        -DPYCXX_INCLUDE_DIR=$(pkg-config --variable=includedir PyCXX) \
@@ -192,6 +183,8 @@ LDFLAGS='-Wl,--as-needed'; export LDFLAGS
        ../
 
 make %{?_smp_mflags}
+
+make doc
 
 
 %install
@@ -207,7 +200,7 @@ ln -s ../%{_lib}/freecad/bin/FreeCADCmd .
 popd
 
 # Fix problems with unittestgui.py
-chmod +x %{buildroot}%{_libdir}/%{name}/Mod/Test/unittestgui.py
+#chmod +x %{buildroot}%{_libdir}/%{name}/Mod/Test/unittestgui.py
 
 # Install desktop file
 desktop-file-install                                   \
@@ -278,9 +271,9 @@ fi
 %{_datadir}/icons/hicolor/scalable/apps/%{name}.svg
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/bin/
-%{_libdir}/%{name}/data/
 %{_libdir}/%{name}/lib/
 %{_libdir}/%{name}/Mod/
+%{_datadir}/%{name}/
 %{_mandir}/man1/*.1.gz
 
 %files doc
@@ -288,9 +281,14 @@ fi
 
 
 %changelog
+* Mon Feb 18 2013 Richard Shaw <hobbes1069@gmail.com> - 0.13-1
+- Update to latest upstream release.
+
 * Sat Oct 20 2012 John Morris <john@zultron.com> - 0.12-9
 - Use cmake28 package on el6
 - Remove COIN3D_DOC_PATH cmake def (one less warning during build)
+- Add PyQt as requirement.
+- Add libicu-devel as build requirement.
 
 * Wed Sep 26 2012 Richard Shaw <hobbes1069@gmail.com> - 0.12-8
 - Rebuild for boost 1.50.
@@ -305,6 +303,12 @@ fi
 * Mon Jun 25 2012  <john@zultron.com> - 0.12-6
 - Filter out automatically generated Provides/Requires of private libraries
 - freecad.desktop not passing 'desktop-file-validate'; fixed
+- Remove BuildRequires: tbb-devel and gts-devel
+- Update license tag to GPLv3+ only.
+- Add missing license files to %%doc.
+- Add missing build requirement for hicolor-icon-theme.
+- Fix excessive linking issue.
+- Other minor spec updates.
 
 * Mon Jun 25 2012  <john@zultron.com> - 0.12-5
 - New patch to unbundle PyCXX
