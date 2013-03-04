@@ -28,7 +28,7 @@
 
 Name:           freecad
 Version:        0.13
-Release:        1%{?dist}
+Release:        1.1%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
@@ -281,6 +281,9 @@ fi
 
 
 %changelog
+* Mon Mar 04 2013 Richard Shaw <hobbes1069@gmail.com> - 0.13-1.1
+- Rebuild for bad freecad-doc package.
+
 * Mon Feb 18 2013 Richard Shaw <hobbes1069@gmail.com> - 0.13-1
 - Update to latest upstream release.
 
