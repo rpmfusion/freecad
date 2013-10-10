@@ -28,7 +28,7 @@
 
 Name:           freecad
 Version:        0.13
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A general purpose 3D CAD modeler
 Group:          Applications/Engineering
 
