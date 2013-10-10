@@ -42,6 +42,7 @@ Source102:      freecad.1
 
 Patch0:         freecad-3rdParty.patch
 Patch1:         freecad-0.13-pycxx.patch
+Patch2:         freecad-0.13-OCE_0.13.patch
 
 
 # Utilities
@@ -140,6 +141,7 @@ End user documentation for FreeCAD
 %patch1 -p1 -b .pycxx
 rm -rf src/CXX
 %endif
+%patch2 -p1 -b .port_oce
 
 %if ! %{bundled_zipios}
 rm -rf src/zipios++
@@ -281,6 +283,9 @@ fi
 
 
 %changelog
+* Thu Oct 10 2013 Richard Shaw <hobbes1069@gmail.com> - 0.13-4
+- Rebuild for OCE 0.13.
+
 * Mon Jul 15 2013 Richard Shaw <hobbes1069@gmail.com> - 0.13-3
 - Rebuild for updated OCE.
 
